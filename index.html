@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Mill Stand Entry</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+    :root {
+        --airbnb-coral: #FF5A5F;
+        --airbnb-teal: #008489;
+        --airbnb-gray: #484848;
+        --airbnb-light: #F7F7F7;
+        --airbnb-card: #ffffff;
+    }
+
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+        background: var(--airbnb-light);
+        padding: 15px;
+        margin: 0;
+    }
+ body {
+        font-family: 'Inter', sans-serif;
+    }
+    h2 {
+        margin: 25px 0 10px;
+        color: var(--airbnb-teal);
+        font-size: 20px;
+        font-weight: 700;
+    }
+
+    .card {
+        background: var(--airbnb-card);
+        padding: 18px;
+        border-radius: 16px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        margin-bottom: 20px;
+    }
+
+    label {
+        font-size: 14px;
+        color: var(--airbnb-gray);
+    }
+
+    input, select {
+        width: 100%;
+        font-size: 16px;
+        border: 1px solid #ccc;
+        padding: 10px;
+        margin-top: 5px;
+        margin-bottom: 14px;
+        border-radius: 12px;
+        background: #fff;
+    }
+
+    .stand-grid {
+    display: block;      /* stack boxes vertically */
+    margin-top: 10px;
+}
+
+.stand-box {
+    background: #fff;
+    border-radius: 14px;
+    padding: 12px;
+    border: 1px solid #e5e5e5;
+    margin-bottom: 14px;   /* space between boxes */
+}
+
+    
+
+    .stand-box strong {
+        color: var(--airbnb-coral);
+        display: block;
+        margin-bottom: 6px;
+    }
+
+    button {
+        width: 100%;
+        background: var(--airbnb-coral);
+        padding: 15px;
+        color: white;
+        font-size: 18px;
+        border: none;
+        border-radius: 14px;
+        position: sticky;
+        bottom: 10px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    }
+
+    #output {
+        white-space: pre-wrap;
+        background: white;
+        padding: 20px;
+        border-radius: 16px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        margin-top: 20px;
+        font-size: 16px;
+    }
+input, select {
+    width: 100%;
+    box-sizing: border-box;    /* ← FIXES overflow issue */
+}
+.stand-box {
+    box-sizing: border-box;    /* ensures the card never expands */
+}
+
+
+</style>
+</head>
+
+<body>
+
+<h2>Mill Stock Report</h2>
+<div class="card">
+    <label>Date</label>
+    <input type="date" id="millDate">
+
+    <label>Shift</label>
+    <select id="millShift">
+        <option value="DAY">DAY</option>
+        <option value="NIGHT">NIGHT</option>
+      
+    </select>
+
+    <label>Time</label>
+    <input type="time" id="millTime">
+    <label>Size</label>
+<select id="millSize">
+    <option value="10MM">10MM</option>
+    <option value="12MM">12MM</option>
+    <option value="16MM">16MM</option>
+    <option value="20MM">20MM</option>
+    <option value="25MM">25MM</option>
+    <option value="32MM">32MM</option>
+</select>
+
+</div>
+
+<h2>Roughing Mill (A, B, 1–6)</h2>
+<div class="card stand-grid" id="roughing"></div>
+
+<h2>Intermediate Mill (7–12)</h2>
+<div class="card stand-grid" id="intermediate"></div>
+
+<h2>Finishing Mill (13–18)</h2>
+<div class="card stand-grid" id="finishing"></div>
+<div>
+<button onclick="generateText()"style="
+ background: var(--airbnb-coral);
+  color:#fff;
+  padding:10px 18px;
+  border:none;
+  border-radius:8px;
+  font-size:16px;
+  cursor:pointer;margin-bottom:10px;
+">Generate Text</button>
+
+<button id="waShare" style="
+  background:#25D366;
+  color:#fff;
+  padding:10px 18px;
+  border:none;
+  border-radius:8px;
+  font-size:16px;
+  cursor:pointer;margin-bottom:10px;
+">
+  Share on WhatsApp
+</button>
+<button onclick="clearAll()" style="
+    background:#484848;
+    color:#fff;
+    padding:10px 18px;
+    border:none;
+    border-radius:8px;
+    font-size:16px;
+    cursor:pointer;
+    margin-bottom:15px;
+">
+    Clear All Inputs
+</button></div>
+<h2>Output</h2>
+<div id="output">—</div>
+
+<script>
+/* ---------- PREFILL DATE, SHIFT, TIME ---------- */
+
+function prefillDateTimeShift() {
+    const today = new Date();
+
+    document.getElementById('millDate').value = today.toISOString().split('T')[0];
+
+    const hh = String(today.getHours()).padStart(2, '0');
+    const mm = String(today.getMinutes()).padStart(2, '0');
+    document.getElementById('millTime').value = `${hh}:${mm}`;
+
+    let shift = "DAY";
+    const hour = today.getHours();
+
+    if (hour >= 7 && hour < 19) shift = "DAY";
+    else shift = "NIGHT";
+    
+
+    document.getElementById('millShift').value = shift;
+}
+prefillDateTimeShift();
+
+/* ---------- STAND INPUT GENERATION ---------- */
+
+const roughing = ["A","B",1,2,3,4,5,6];
+const intermediate = [7,8,9,10,11,12];
+const finishing = [13,14,15,16,17,18];
+
+function createInputs(list, containerId) {
+    const container = document.getElementById(containerId);
+    list.forEach(st => {
+        container.innerHTML += `
+            <div class="stand-box">
+                <strong>Stand ${st}</strong>
+                <input id="stock_${st}" placeholder="Stock Size">
+                <input id="gap_${st}" placeholder="Roll Gap">
+            </div>
+        `;
+    });
+}
+
+createInputs(roughing, "roughing");
+createInputs(intermediate, "intermediate");
+createInputs(finishing, "finishing");
+
+/* ---------- GENERATE WHATSAPP-FRIENDLY TEXT ---------- */
+
+function generateText() {
+    let finalText = "";
+
+    const date = document.getElementById("millDate").value;
+    const shift = document.getElementById("millShift").value;
+    const time = document.getElementById("millTime").value;
+const size = document.getElementById("millSize").value;
+finalText += `*Mill Stock Report*\n\n`;
+    finalText += `Date: ${date}\n`;
+    finalText += `Time: ${time}\n`;
+    finalText += `Shift: ${shift}\n\n`;
+    finalText += `Size: ${size}\n\n`;
+    
+
+    const all = [...roughing, ...intermediate, ...finishing];
+
+    all.forEach(st => {
+        const stock = document.getElementById(`stock_${st}`).value.trim();
+        const gap = document.getElementById(`gap_${st}`).value.trim();
+
+        if (stock !== "" || gap !== "") {
+            finalText += `• Stand ${st}: Stock = ${stock || "-"}, Roll Gap = ${gap || "-"}\n`;
+        }
+    });
+
+    document.getElementById("output").textContent =
+        finalText === "" ? "No stands filled." : finalText;
+}
+
+
+document.getElementById("waShare").addEventListener("click", function () {
+
+    const msg = document.getElementById("output").textContent;
+
+    if (!msg || msg === "—" || msg === "No stands filled.") {
+        alert("Please generate the report first.");
+        return;
+    }
+
+    const waUrl = "https://wa.me/?text=" + encodeURIComponent(msg);
+
+    window.open(waUrl, "_blank");
+});
+
+function clearAll() {
+    // Clear general info except date/shift/time auto-fill
+    document.getElementById("millSize").value = "10MM";
+
+    // Clear stands
+    const all = [...roughing, ...intermediate, ...finishing];
+
+    all.forEach(st => {
+        document.getElementById(`stock_${st}`).value = "";
+        document.getElementById(`gap_${st}`).value = "";
+    });
+
+    // Clear output
+    document.getElementById("output").textContent = "—";
+
+    // Refill date/time/shift
+    prefillDateTimeShift();
+}
+
+
+</script>
+
+</body>
+</html>
